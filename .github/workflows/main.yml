@@ -28,12 +28,14 @@ jobs:
           gradle-version: '8.9'
 
       - name: Unit tests
+        shell: bash
         working-directory: SpeedScope
-        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+        run: gradle :app:testDebugUnitTest --no-daemon --console=plain 2>&1 | tee build.log
 
       - name: Build debug APK
+        shell: bash
         working-directory: SpeedScope
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+        run: gradle :app:assembleDebug --no-daemon --console=plain 2>&1 | tee build2.log
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -41,9 +43,9 @@ jobs:
           name: SpeedScope-debug-apk
           path: SpeedScope/app/build/outputs/apk/debug/*.apk
 
-      - name: Upload test reports (on failure)
+      - name: Show errors
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: SpeedScope/app/build/reports/tests/
+        working-directory: SpeedScope
+        run: |
+          echo "===== ERRORS ====="
+          cat build.log build2.log 2>/dev/null | grep -E "^e: |What went wrong|Execution failed|error:" -A3 | head -120
